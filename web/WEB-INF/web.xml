@@ -1,0 +1,16 @@
+<web-app>
+    <servlet>
+       <servlet-name>Test</servlet-name>
+       <servlet-class>Test</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+       <servlet-name>Test</servlet-name>
+       <url-pattern>/Test</url-pattern>
+    </servlet-mapping>
+
+    <error-page>
+        <error-code>404</error-code>
+        <location>/404.html</location>
+    </error-page>
+</web-app>

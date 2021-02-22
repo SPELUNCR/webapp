@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <meta name="author" content="Paul Hemsworth">
+    <link rel="stylesheet" href="/main_style.css">
+    <link rel="icon" href="/images/favicon.ico">
+    <title>Controller</title>
+</head>
+<body>
+    <div class="header">
+        <h1>Controller Input</h1>
+    </div>
+    <ul>
+        <li><a href="/index.html">About</a></li>
+        <li><a href="/data.html">Mission</a></li>
+        <li><a href="/webGL.html">WebGL Test</a></li>
+        <li><a href="/controller.html" class="active">Controller Input</a></li>
+    </ul>
+    <div id="content">
+		<div class="container" style="width:640px;height:430px;margin:auto;position:relative;top:0.75rem;">
+			<img src="images/xbox-controller.png" style="padding:0;">
+			<svg width="640" height="430">
+				<circle id="HmBt" cx="320" cy="58" r="29"/> <!-- Home -->
+				<circle id="BkBt" cx="275" cy="130" r="14"/> <!-- Back -->
+				<circle id="MnBt" cx="366" cy="130" r="14"/> <!-- Menu -->
+				<circle id="Abtn" cx="482" cy="174" r="22"/> <!-- A -->
+				<circle id="Bbtn" cx="526" cy="131" r="22"/> <!-- B -->
+				<circle id="Xbtn" cx="439" cy="131" r="22"/> <!-- X -->
+				<circle id="Ybtn" cx="482" cy="88" r="22"/> <!-- Y -->
+				<circle id="LtTs" cx="159" cy="130" r="35" style="fill:#335033;"/> <!-- Left Thumbstick -->
+				<circle id="RtTs" cx="402" cy="225" r="35" style="fill:#335033;"/> <!-- Right Thumbstick -->
+				<rect id="D-Lt" x="193" y="221" width="24" height="24"/> <!-- D-pad Left -->
+				<rect id="D-Rt" x="260" y="221" width="24" height="24"/> <!-- D-pad Right -->
+				<rect id="D-Up" x="226" y="188" width="24" height="24"/> <!-- D-pad Up -->
+				<rect id="D-Dn" x="226" y="254" width="24" height="24"/> <!-- D-pad Down -->
+				<polygon id="LbBt" points="97,54 103,34 152,10 187,3 208,3 237,18 220,48 204,32 191,26 160,32 132,40"/> <!-- Left Bumper -->
+				<polygon id="RbBt" points="543,54 537,34 488,10 453,3 432,3 403,18 420,48 436,32 449,26 480,32 508,40"/> <!-- Right Bumper -->
+			</svg>
+		</div>
+		<table>
+            <tr>
+                <th>Left Thumbstick X</th>
+                <td id="LtsX">
+                <th>Right Thumbstick X</th>
+                <td id="RtsX">
+            </tr>
+            <tr>
+                <th>Left Thumbstick Y</th>
+                <td id="LtsY">
+                <th>Right Thumbstick Y</th>
+                <td id="RtsY">
+            </tr>
+            <tr>
+                <th>Left Trigger</th>
+                <td id="LtVl">
+                <th>Right Trigger</th>
+                <td id="RtVl">
+            </tr>
+        </table>
+    </div>
+    <footer>
+        <p style="text-align: left;">AE445: Spacecraft Detail Design<span style="float: right;">Updated: 26 January 2021</span><br>
+        Author: Paul Hemsworth<br>
+        Email: hemsworp@my.erau.edu</p>
+    </footer>
+    <script type="text/javascript">
+        var socketUrl = window.location.hostname + ":" + window.location.port + "/controller";
+        var socket = new WebSocket("ws://" + socketUrl);
+
+        socket.onopen = function(e) {
+			console.log("Websocket connected");
+		};
+
+		/*
+			first 4 characters specify element id
+			remainder is the data
+		*/
+        socket.onmessage = function(event) {
+			var data = `${event.data}`; // Get the message
+			var elemId = data.substring(0,4); // Get element id (4 characters)
+			var input = parseInt(data.substring(4,data.length));
+
+			console.log("Received data");
+
+			switch (elemId){
+				case "Abtn": // A button
+				case "Bbtn": // B button
+				case "Xbtn": // X button
+				case "Ybtn": // Y button
+				case "HmBt": // Home button
+				case "BkBt": // Back button
+				case "MnBt": // Menu button
+				case "RbBt": // Right bumper button
+				case "LbBt": // Left bumper button
+				case "D-Up": // D-Pad up button
+				case "D-Dn": // D-Pad down button
+				case "D-Lt": // D-Pad left button
+				case "D-Rt": // D-Pad right button
+					var elem = document.getElementById(elemId); // try to obtain element from id
+
+					if (elem == null){ // stop function if no element found
+						console.log("No element found");
+						return;
+					}
+					if (input == 0){
+						elem.style.visibility="hidden";
+					} else {
+						elem.style.visibility="visible";
+					}
+					break;
+				case "LsDn":
+					var elem = document.getElementById("LtTs");
+					if (input == 0){
+						elem.style.visibility="hidden";
+					} else {
+						elem.style.visibility="visible";
+					}
+					break;
+				case "RsDn":
+					var elem = document.getElementById("RtTs");
+					if (input == 0){
+						elem.style.visibility="hidden";
+					} else {
+						elem.style.visibility="visible";
+					}
+					break;
+				case "D-Ct":
+					document.getElementById("D-Lt").style.visibility="hidden";
+					document.getElementById("D-Rt").style.visibility="hidden";
+					document.getElementById("D-Up").style.visibility="hidden";
+					document.getElementById("D-Dn").style.visibility="hidden";
+					break;
+				case "LtsX":
+					var newX = 159 + getDelta16ADC(input);
+					document.getElementById(elemId).innerHTML=input;
+					document.getElementById("LtTs").setAttribute("cx",newX);
+					break;
+				case "LtsY":
+					var newY = 130 + getDelta16ADC(input);
+					document.getElementById(elemId).innerHTML=input;
+					document.getElementById("LtTs").setAttribute("cy",newY);
+					break;
+				case "RtsX":
+					var newX = 402 + getDelta16ADC(input);
+					document.getElementById(elemId).innerHTML=input;
+					document.getElementById("RtTs").setAttribute("cx",newX);
+					break;
+				case "RtsY":
+					var newY = 225 + getDelta16ADC(input);
+					document.getElementById(elemId).innerHTML=input;
+					document.getElementById("RtTs").setAttribute("cy",newY);
+					break;
+			}
+        };
+
+        socket.onclose = function(event) {
+            if (event.wasClean) {
+                alert(`Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+            } else {
+                // e.g. server process killed or network down
+                // event.code is usually 1006 in this case
+                alert('[close] Connection died');
+            }
+        };
+
+        socket.onerror = function(error) {
+            alert(`[error] ${error.message}`);
+        };
+
+
+		function getDelta16ADC(input){
+		// get thumbstick delta for value of 16-bit ADC
+		// Values between -32768 and 32767
+			if (input < -32768 || input > 32767){
+				return 0;
+			}
+			return ((input + 32768)/65535-0.5)*70;
+		}
+
+		function getDelta10ADC(input){
+		// get thumbstick delta for value of 10-bit ADC
+		// Values between 0 and 1023
+			if (input < 0 || input > 1023){
+				return 0;
+			}
+			return input/1023;
+		}
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+<project name="SPELUNCRServer" default="compile" basedir=".">
+    <description>
+        This file builds the web server that displays SPELUNCR's data.
+    </description>
+
+    <target name="compile">
+
+    </target>
+
+    <target name="build" depends="compile">
+
+    </target>
+</project>
