@@ -1,16 +1,25 @@
 <web-app>
     <servlet>
-       <servlet-name>Test</servlet-name>
-       <servlet-class>Test</servlet-class>
+       <servlet-name>TelemetryServlet</servlet-name>
+       <servlet-class>com.speluncr.TelemetryServlet</servlet-class>
+        <load-on-startup>0</load-on-startup>
     </servlet>
 
     <servlet-mapping>
-       <servlet-name>Test</servlet-name>
-       <url-pattern>/Test</url-pattern>
+       <servlet-name>TelemetryServlet</servlet-name>
+       <url-pattern>/telemetry</url-pattern>
     </servlet-mapping>
+
+    <session-config>
+        <session-timeout>15</session-timeout>
+    </session-config>
 
     <error-page>
         <error-code>404</error-code>
         <location>/404.html</location>
     </error-page>
+
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+    </welcome-file-list>
 </web-app>
