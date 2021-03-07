@@ -13,7 +13,7 @@ import java.util.Properties;
 
 public class TelemetryServlet extends HttpServlet {
     private final RadiationSensor gc = new RadiationSensor(this);
-    private final AttitudeSensor as = new AttitudeSensor(this);
+    private final AttitudeSensor as = new AttitudeSensor();
     private final Properties properties = new Properties();
 
     public TelemetryServlet(){
