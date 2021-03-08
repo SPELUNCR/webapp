@@ -7,8 +7,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
 import java.util.Properties;
 
 public class TelemetryServlet extends HttpServlet {
@@ -38,25 +36,15 @@ public class TelemetryServlet extends HttpServlet {
     }
 
     private void LoadProperties(){
-        File propertiesFile = null;
-
         // Navigate to the servlet.conf file that contains properties used by this class
         // The following try-catch block is only necessary because the absolute path
         // of servlet.conf will be different on other computers and I want this to work
         // right away so you don't have to hard-code your specific path and recompile this code.
-        try {
-            Path classPath = Path.of(
-                    TelemetryServlet.class.getResource("/com/speluncr/TelemetryServlet.class").toURI());
-            String targetString = System.getProperty("file.separator") +
-                    classPath.subpath(0,classPath.getNameCount()-4).resolve("servlet.conf").toString();
-            propertiesFile = new File(targetString);
-            System.out.format("Attempting to load properties from: %s%n", propertiesFile.getAbsolutePath());
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
+        File propertiesFile = new File("/opt/apache-tomcat-9.0.39/webapps/speluncr/WEB-INF/servlet.conf");
+        System.out.format("Attempting to load properties from: %s%n", propertiesFile.getAbsolutePath());
 
         // Stop if there's no file to load the properties
-        if (propertiesFile == null || !propertiesFile.exists()){
+        if (!propertiesFile.exists()){
             System.err.println("[ERROR]: The properties file could not be read");
             return;
         }
