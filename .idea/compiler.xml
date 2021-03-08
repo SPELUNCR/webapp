@@ -10,7 +10,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="11">
-      <module name="SPELUNCRServer" target="15.0.1" />
+      <module name="SPELUNCRServer" target="11.0.9" />
     </bytecodeTargetLevel>
   </component>
 </project>
