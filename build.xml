@@ -5,8 +5,8 @@
 
     <property name="app.name" value="speluncr"/>
     <property name="app.version" value="1.0"/>
-    <property name="tomcat.home" value="/opt/apache-tomcat-10.0.2"/>
     <property name="tomcat.version" value="9.0.39"/>
+    <property name="tomcat.home" value="/opt/apache-tomcat-${tomcat.version}"/>
     <property name="build.home" value="${basedir}/build"/>
     <property name="dist.home" value="${basedir}/dist"/>
     <property name="src.home" value="${basedir}/src"/>
@@ -15,6 +15,8 @@
     <property name="compile.deprecation" value="false"/>
     <property name="lib.repository" value="/home/paul/.m2/repository"/>
     <property name="pi4j.jar" value="${lib.repository}/com/pi4j/pi4j-core/1.3/pi4j-core-1.3.jar"/>
+    <property name="activation.jar" value="${lib.repository}/javax/activation/javax.activation-api/1.2.0/javax.activation-api-1.2.0.jar"/>
+    <property name="jaxb.jar" value="${lib.repository}/javax/xml/bind/jaxb-api/2.3.1/jaxb-api-2.3.1.jar"/>
     <property name="juli.jar" value="${lib.repository}/org/apache/tomcat/tomcat-juli/${tomcat.version}/tomcat-juli-${tomcat.version}.jar"/>
     <property name="servlet.jar" value="${lib.repository}/org/apache/tomcat/tomcat-servlet-api/${tomcat.version}/tomcat-servlet-api-${tomcat.version}.jar"/>
     <property name="util.jar" value="${lib.repository}/org/apache/tomcat/tomcat-util/${tomcat.version}/tomcat-util-${tomcat.version}.jar"/>
@@ -24,11 +26,14 @@
     <path id="complile.classpath">
         <!-- pi4j will go into /WEB-INF/lib -->
         <pathelement location="${pi4j.jar}"/>
+        <pathelement location="${activation.jar}"/>
+        <pathelement location="${jaxb.jar}"/>
         <pathelement location="${juli.jar}"/>
         <pathelement location="${servlet.jar}"/>
         <pathelement location="${util.jar}"/>
         <pathelement location="${websocket.jar}"/>
         <pathelement location="${websocketapi.jar}"/>
+
         <!-- Include all elements that Tomcat exposes to applications
         <fileset dir="${tomcat.home}/bin">
             <include name="*.jar"/>
@@ -36,8 +41,7 @@
         <pathelement location="${tomcat.home}/lib"/>
         <fileset dir="${tomcat.home}/lib">
             <include name="*.jar"/>
-        </fileset>
-        -->
+        </fileset> -->
     </path>
 
     <target name="prepare">
@@ -54,6 +58,8 @@
         <!-- Copy external dependencies -->
         <mkdir dir="${build.home}/WEB-INF/lib"/>
         <copy todir="${build.home}/WEB-INF/lib" file="${pi4j.jar}"/>
+        <copy todir="${build.home}/WEB-INF/lib" file="${activation.jar}"/>
+        <copy todir="${build.home}/WEB-INF/lib" file="${jaxb.jar}"/>
     </target>
 
     <target name="compile" depends="prepare">
