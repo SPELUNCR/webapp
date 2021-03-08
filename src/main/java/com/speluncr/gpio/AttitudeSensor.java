@@ -63,35 +63,40 @@ public class AttitudeSensor implements Sensor{
 
         // Add listener for when interrupt pin goes low. This means data is ready.
         interrupt.addListener((GpioPinListenerDigital) event -> {
+            final float ACC_SCALE = 16384; // LSB/g for +/- 2g range
+            final float GYR_SCALE = 32.8f; // LSB/deg/s for +/- 1000 deg/s range
+
             if (event.getState().isLow()){
+                // Gyro, Accelerometer and Temperature values in big-endian
+                float accX, accY, accZ, gyrX, gyrY, gyrZ, temp;
+                ByteBuffer bb = ByteBuffer.allocate(14);
+                bb.order(ByteOrder.LITTLE_ENDIAN);
+
                 try {
-                    // Gyro, Accelerometer and Temperature values in big-endian
-                    short accX, accY, accZ, gyrX, gyrY, gyrZ, temp;
-                    ByteBuffer bb = ByteBuffer.allocate(14);
-
-                    // Read data from MPU6050 registers
+                    // Read data from MPU6050 registers and convert to g, deg/s, and C
                     MPU6050.read(INT_STATUS); // reset int status by reading INT_STATUS register
-                    accX = readShort(ACCEL_X);
-                    accY = readShort(ACCEL_Y);
-                    accZ = readShort(ACCEL_Z);
-                    gyrX = readShort(GYRO_X);
-                    gyrY = readShort(GYRO_Y);
-                    gyrZ = readShort(GYRO_Z);
-                    temp = readShort(TEMP_OUT);
-
-                    // Put data from MPU6050 registers into byte buffer to broadcast on endpoints
-                    bb.putShort(accX);
-                    bb.putShort(accY);
-                    bb.putShort(accZ);
-                    bb.putShort(gyrX);
-                    bb.putShort(gyrY);
-                    bb.putShort(gyrZ);
-                    bb.putShort(temp);
-                    AttitudeEndpoint.broadcast(bb);
+                    accX = readShort(ACCEL_X) / ACC_SCALE;
+                    accY = readShort(ACCEL_Y) / ACC_SCALE;
+                    accZ = readShort(ACCEL_Z) / ACC_SCALE;
+                    gyrX = readShort(GYRO_X) / GYR_SCALE;
+                    gyrY = readShort(GYRO_Y) / GYR_SCALE;
+                    gyrZ = readShort(GYRO_Z) / GYR_SCALE;
+                    temp = readShort(TEMP_OUT) / 340f + 36.53f; // see register map for this conversion
                 } catch (IOException e){
                     System.err.println("interruptListener: Failed to read sensor data.");
                     e.printStackTrace();
+                    return;
                 }
+
+                // Put data from MPU6050 registers into byte buffer to broadcast on endpoints
+                bb.putFloat(accX);
+                bb.putFloat(accY);
+                bb.putFloat(accZ);
+                bb.putFloat(gyrX);
+                bb.putFloat(gyrY);
+                bb.putFloat(gyrZ);
+                bb.putFloat(temp);
+                AttitudeEndpoint.broadcast(bb);
             }
         });
     }

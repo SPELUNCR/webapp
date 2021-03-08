@@ -4,14 +4,10 @@
 * Author: Paul Hemsworth    Email: hemsworp@my.erau.edu
 *******************************************************/
 
-// A list of HTML element IDs used to access HTML elements that display data
-const DATA_IDS = ['spd', 'hdg', 'lat', 'lng', 'bt1', 'bt2', 'bt3', 'bt4'];
-
-// Object with properties and methods to convert latitude and longitude values
-// to CSS top and left position values with pixel units
+const IDS = ["accX","accY","accZ","gyrX","gyrY","gyrZ","temp"];
 
 // Get the socket address and create the websocket. Use arraybuffer for binary data
-const SOCKET_URL = window.location.hostname + ':' + window.location.port + '/data';
+const SOCKET_URL = window.location.hostname + ':' + window.location.port + '/attitude';
 const SOCKET = new WebSocket('ws://' + SOCKET_URL);
 SOCKET.binaryType = 'arraybuffer';
 
@@ -24,12 +20,12 @@ SOCKET.onopen = function(e) {
 SOCKET.onmessage = function(event) {  
     // Server data is in little endian as this is most common.
     // There will be trouble if a system using big endian data tries to read this
-    const buffer = new Float64Array(event.data);
+    const buffer = new Float32Array(event.data);
 
     // Go through array of received data and set the corresponding HTML element
     var value, idx = 0;
     for (value of buffer){
-        var id = DATA_IDS[idx];
+        var id = IDS[idx];
 
         // Set table element values
         var element = document.getElementById(id);
@@ -38,7 +34,6 @@ SOCKET.onmessage = function(event) {
         }
         idx++;
     }
-
 };
 
 // Event handler for the websocket closing
