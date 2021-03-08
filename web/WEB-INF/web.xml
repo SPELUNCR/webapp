@@ -7,7 +7,7 @@
 
     <servlet-mapping>
        <servlet-name>TelemetryServlet</servlet-name>
-       <url-pattern>/telemetry</url-pattern>
+       <url-pattern>/speluncr</url-pattern>
     </servlet-mapping>
 
     <session-config>
@@ -20,6 +20,6 @@
     </error-page>
 
     <welcome-file-list>
-        <welcome-file>index.html</welcome-file>
+        <welcome-file>/index.html</welcome-file>
     </welcome-file-list>
 </web-app>

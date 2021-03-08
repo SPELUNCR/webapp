@@ -16,7 +16,7 @@ public class AttitudeEndpoint {
     private RemoteEndpoint.Basic remoteEndpoint;
 
     @OnOpen
-    private void onOpen(Session session){
+    public void onOpen(Session session){
         session.setMaxIdleTimeout(10000); // 10 second timeout (no messages in 10 s)
         remoteEndpoint = session.getBasicRemote();
         endpts.add(this);

@@ -3,7 +3,7 @@
         This file builds the web server that displays SPELUNCR's data.
     </description>
 
-    <property name="app.name" value="webapp"/>
+    <property name="app.name" value="speluncr"/>
     <property name="app.version" value="1.0"/>
     <property name="tomcat.home" value="/opt/apache-tomcat-10.0.2"/>
     <property name="tomcat.version" value="9.0.39"/>
@@ -76,7 +76,7 @@
 
     <target name="build" depends="compile" description="create binary distribution">
         <!-- Create jar file -->
-        <jar jarfile="${dist.home}/${app.name}-${app.version}.war" basedir="${build.home}"/>
+        <jar jarfile="${dist.home}/${app.name}.war" basedir="${build.home}"/>
     </target>
 
     <target name="clean">
