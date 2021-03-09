@@ -5,19 +5,21 @@
 *******************************************************/
 
 const IDS = ["accX","accY","accZ","gyrX","gyrY","gyrZ","temp"];
+var attUps = 0; // Attitude updates per second
+var attUpsTimer = setInterval(repAttRate, 1000); // Report update rate every second
 
 // Get the socket address and create the websocket. Use arraybuffer for binary data
-const SOCKET_URL = window.location.hostname + ':' + window.location.port + '/attitude';
-const SOCKET = new WebSocket('ws://' + SOCKET_URL);
-SOCKET.binaryType = 'arraybuffer';
+const ATTITUDE_SOCKET_URL = window.location.hostname + ':' + window.location.port + '/attitude';
+const ATTITUDE_SOCKET = new WebSocket('ws://' + SOCKET_URL);
+ATTITUDE_SOCKET.binaryType = 'arraybuffer';
 
 // Event handler for the websocket opening
-SOCKET.onopen = function(e) {
+ATTITUDE_SOCKET.onopen = function(e) {
     document.getElementById('data').innerHTML+='Connection Established. Awaiting Data.<br>';
 };
 
 // Event handler for the websocket receiving data
-SOCKET.onmessage = function(event) {  
+ATTITUDE_SOCKET.onmessage = function(event) {
     // Server data is in little endian as this is most common.
     // There will be trouble if a system using big endian data tries to read this
     const buffer = new Float32Array(event.data);
@@ -34,10 +36,11 @@ SOCKET.onmessage = function(event) {
         }
         idx++;
     }
+    attUps++; // This counts as an attitude update. Increment the counter
 };
 
 // Event handler for the websocket closing
-SOCKET.onclose = function(event) {
+ATTITUDE_SOCKET.onclose = function(event) {
     if (event.wasClean) {
         document.getElementById('data').innerHTML+=`Connection closed cleanly, code=${event.code} reason=${event.reason}<br>`;
     } else {
@@ -45,9 +48,18 @@ SOCKET.onclose = function(event) {
         // event.code is usually 1006 in this case
         alert('[close] Connection died');
     }
+    // Set update rate to 0 Hz and report it, then stop reporting every second
+    attUps=0;
+    repAttRate();
+    clearInterval(attUpsTimer);
 };
 
 // Event handler for websocket error
 SOCKET.onerror = function(error) {
     alert(`[error] ${error.message}`);
 };
+
+function repAttRate(){
+    document.getElementById("attUpdateRate").innerHTML=attUps;
+    attUps=0;
+}

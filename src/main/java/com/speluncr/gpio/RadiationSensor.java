@@ -17,6 +17,9 @@ import java.io.IOException;
 public class RadiationSensor implements Sensor {
     private final TelemetryServlet servlet;
     private DataOutputStream outputStream;
+    private long initTime = 0;
+    private int[] cps = new int[60]; // store the counts of the last 60 1-second intervals
+    private int cpsIdx = 0; // index of current 1 second interval
 
     public RadiationSensor(TelemetryServlet telemetryServlet){
         servlet = telemetryServlet;
@@ -39,6 +42,8 @@ public class RadiationSensor implements Sensor {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        initTime = System.nanoTime();
     }
 
     public void stopSensor(){
@@ -55,6 +60,14 @@ public class RadiationSensor implements Sensor {
     }
 
     private void count(){
-        //long time = System.nanoTime(); // get time of event
+        long time = System.nanoTime(); // get time of event
+        try {
+            outputStream.writeLong(time);
+        } catch (IOException e){
+            System.err.printf("count(): Failed to write value %d to data file\n", time);
+            e.printStackTrace();
+        }
+
+
     }
 }
