@@ -20,6 +20,7 @@ public class AttitudeEndpoint {
         session.setMaxIdleTimeout(10000); // 10 second timeout (no messages in 10 s)
         remoteEndpoint = session.getBasicRemote();
         endpts.add(this);
+        System.out.println("Attitude Endpoint Opened");
     }
 
     @OnClose

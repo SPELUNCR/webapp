@@ -17,9 +17,10 @@ import java.io.IOException;
 public class RadiationSensor implements Sensor {
     private final TelemetryServlet servlet;
     private DataOutputStream outputStream;
-    private long initTime = 0;
-    private int[] cps = new int[60]; // store the counts of the last 60 1-second intervals
-    private int cpsIdx = 0; // index of current 1 second interval
+    private GpioPinDigitalInput inpin;
+    //private long initTime = 0;
+    //private int[] cps = new int[60]; // store the counts of the last 60 1-second intervals
+    //private int cpsIdx = 0; // index of current 1 second interval
 
     public RadiationSensor(TelemetryServlet telemetryServlet){
         servlet = telemetryServlet;
@@ -28,14 +29,18 @@ public class RadiationSensor implements Sensor {
     public void initializeSensor(){
         System.out.println("Initializing Geiger Counter...");
 
-        GpioPinDigitalInput inpin = GPIOInitializer.getInstance().getGpioController()
+        // Set pin 7 as digital input
+        inpin = GPIOInitializer.getInstance().getGpioController()
                 .provisionDigitalInputPin(RaspiPin.GPIO_07, PinPullResistance.PULL_UP);
+
+        // Add listener to pin 7 to handle when signal goes low (count occurs)
         inpin.addListener((GpioPinListenerDigital) event -> {
             if (event.getState().isLow()){
                 count();
             }
         });
 
+        // Open a data file for the raw data
         try {
             outputStream = new DataOutputStream(new FileOutputStream(
                     servlet.getProperties().getProperty("RadiationDataFile")));
@@ -43,11 +48,16 @@ public class RadiationSensor implements Sensor {
             e.printStackTrace();
         }
 
-        initTime = System.nanoTime();
+        //initTime = System.nanoTime();
     }
 
     public void stopSensor(){
         System.out.println("Stopping Geiger Counter...");
+        // If inpin was initialized, then remove its listeners
+        if (inpin != null){
+            inpin.removeAllListeners();
+        }
+
         // Save and close data file if open
         if (outputStream != null){
             try {
@@ -67,7 +77,5 @@ public class RadiationSensor implements Sensor {
             System.err.printf("count(): Failed to write value %d to data file\n", time);
             e.printStackTrace();
         }
-
-
     }
 }

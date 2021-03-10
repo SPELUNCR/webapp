@@ -1,8 +1,6 @@
 package com.speluncr.gpio;
 
-import com.pi4j.io.gpio.GpioPinDigitalInput;
-import com.pi4j.io.gpio.PinPullResistance;
-import com.pi4j.io.gpio.RaspiPin;
+import com.pi4j.io.gpio.*;
 import com.pi4j.io.gpio.event.GpioPinListenerDigital;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
@@ -16,10 +14,15 @@ import java.nio.ByteOrder;
  * This class will initialize the MPU6050 attitude sensor,
  * read data when it arrives and broadcast the data on all
  * AttitudeEnpoints.
+ *
+ * THE LOGICAL PIN NUMBERS DO NOT ALWAYS MATCH THE PHYSICAL
+ * PIN NUMBERS. Refer to the pi4j pin diagram at the url:
+ * https://pi4j.com/1.4/pins/rpi-4b.html
  ************************************************************/
 public class AttitudeSensor implements Sensor{
     private I2CBus bus = null;
     private I2CDevice MPU6050;
+    private GpioPinDigitalInput interrupt;
 
     public void initializeSensor(){
         final int MPU6050_ADDRESS = 0x69; // 0x68 when ADO set low. 0x69 when ADO set high
@@ -36,6 +39,13 @@ public class AttitudeSensor implements Sensor{
         final int GYRO_X        = 0x43; // 16-bit 2's comp. value (0x43-0x44)
         final int GYRO_Y        = 0x45; // 16-bit 2's comp. value (0x45-0x46)
         final int GYRO_Z        = 0x47; // 16-bit 2's comp. value (0x47-0x48)
+
+        // Set ADO pin high (address = 0x69). GPIO_16 is physical pin 10
+        final GpioPinDigitalOutput ADO = GPIOInitializer.getInstance().getGpioController()
+                .provisionDigitalOutputPin(RaspiPin.GPIO_16, PinState.HIGH);
+
+        // Set shutdown state of ADO to low
+        ADO.setShutdownOptions(true, PinState.LOW);
 
         // Open I2C bus for communication with MPU6050
         try {
@@ -57,9 +67,9 @@ public class AttitudeSensor implements Sensor{
             e.printStackTrace();
         }
 
-        // Configure pin as interrupt
-        GpioPinDigitalInput interrupt = GPIOInitializer.getInstance().getGpioController()
-                .provisionDigitalInputPin(RaspiPin.GPIO_08, PinPullResistance.PULL_UP);
+        // Configure pin as interrupt GPIO_15 is physical pin 8
+        interrupt = GPIOInitializer.getInstance().getGpioController()
+                .provisionDigitalInputPin(RaspiPin.GPIO_15, PinPullResistance.PULL_UP);
 
         // Add listener for when interrupt pin goes low. This means data is ready.
         interrupt.addListener((GpioPinListenerDigital) event -> {
@@ -102,6 +112,11 @@ public class AttitudeSensor implements Sensor{
     }
 
     public void stopSensor(){
+        // If interrupt was initialized, remove all its listeners
+        if (interrupt != null){
+            interrupt.removeAllListeners();
+        }
+
         // Close I2C bus if open
         if (bus != null){
             try{
