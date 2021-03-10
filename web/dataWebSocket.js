@@ -9,8 +9,8 @@ var attUps = 0; // Attitude updates per second
 var attUpsTimer = setInterval(repAttRate, 1000); // Report update rate every second
 
 // Get the socket address and create the websocket. Use arraybuffer for binary data
-const ATTITUDE_SOCKET_URL = window.location.hostname + ':' + window.location.port + '/attitude';
-const ATTITUDE_SOCKET = new WebSocket('ws://' + SOCKET_URL);
+const ATTITUDE_SOCKET_URL = window.location.hostname + ':' + window.location.port + '/speluncr/attitude';
+const ATTITUDE_SOCKET = new WebSocket('ws://' + ATTITUDE_SOCKET_URL);
 ATTITUDE_SOCKET.binaryType = 'arraybuffer';
 
 // Event handler for the websocket opening
@@ -55,7 +55,7 @@ ATTITUDE_SOCKET.onclose = function(event) {
 };
 
 // Event handler for websocket error
-SOCKET.onerror = function(error) {
+ATTITUDE_SOCKET.onerror = function(error) {
     alert(`[error] ${error.message}`);
 };
 

@@ -75,6 +75,7 @@ public class AttitudeSensor implements Sensor{
         interrupt.addListener((GpioPinListenerDigital) event -> {
             final float ACC_SCALE = 16384; // LSB/g for +/- 2g range
             final float GYR_SCALE = 32.8f; // LSB/deg/s for +/- 1000 deg/s range
+            System.out.printf("Attitude Sensor Interrupt State = %s\n", event.getState());
 
             if (event.getState().isLow()){
                 // Gyro, Accelerometer and Temperature values in big-endian
@@ -106,6 +107,7 @@ public class AttitudeSensor implements Sensor{
                 bb.putFloat(gyrY);
                 bb.putFloat(gyrZ);
                 bb.putFloat(temp);
+                System.out.println("Broadcasting attitude data...");
                 AttitudeEndpoint.broadcast(bb);
             }
         });
