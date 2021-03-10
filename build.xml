@@ -14,7 +14,7 @@
     <property name="compile.debug" value="true"/>
     <property name="compile.deprecation" value="false"/>
     <property name="lib.repository" value="/home/paul/.m2/repository"/>
-    <property name="pi4j.jar" value="${lib.repository}/com/pi4j/pi4j-core/1.3/pi4j-core-1.3.jar"/>
+    <property name="pi4j.jar" value="${lib.repository}/com/pi4j/pi4j-core/1.4/pi4j-core-1.4.jar"/>
     <property name="activation.jar" value="${lib.repository}/javax/activation/javax.activation-api/1.2.0/javax.activation-api-1.2.0.jar"/>
     <property name="jaxb.jar" value="${lib.repository}/javax/xml/bind/jaxb-api/2.3.1/jaxb-api-2.3.1.jar"/>
     <property name="juli.jar" value="${lib.repository}/org/apache/tomcat/tomcat-juli/${tomcat.version}/tomcat-juli-${tomcat.version}.jar"/>
