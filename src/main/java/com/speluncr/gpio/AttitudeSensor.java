@@ -80,7 +80,7 @@ public class AttitudeSensor implements Sensor{
             if (event.getState().isLow()){
                 // Gyro, Accelerometer and Temperature values in big-endian
                 float accX, accY, accZ, gyrX, gyrY, gyrZ, temp;
-                ByteBuffer bb = ByteBuffer.allocate(14);
+                ByteBuffer bb = ByteBuffer.allocate(28);
                 bb.order(ByteOrder.LITTLE_ENDIAN);
 
                 try {
@@ -153,7 +153,7 @@ public class AttitudeSensor implements Sensor{
 
         // Gyro, Accelerometer and Temperature values in big-endian
         float accX, accY, accZ, gyrX, gyrY, gyrZ, temp;
-        ByteBuffer bb = ByteBuffer.allocate(14);
+        ByteBuffer bb = ByteBuffer.allocate(28);
         bb.order(ByteOrder.LITTLE_ENDIAN);
 
         try {
