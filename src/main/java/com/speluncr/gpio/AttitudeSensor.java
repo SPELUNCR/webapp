@@ -111,6 +111,7 @@ public class AttitudeSensor implements Sensor{
                 AttitudeEndpoint.broadcast(bb);
             }
         });
+        readAttitudeData();
     }
 
     public void stopSensor(){
@@ -136,5 +137,50 @@ public class AttitudeSensor implements Sensor{
         bb.order(ByteOrder.BIG_ENDIAN);
         MPU6050.read(addr, bytes, 0, 2);
         return bb.getShort();
+    }
+
+    private void readAttitudeData(){
+        final int INT_STATUS    = 0x3A; // interrupt status register
+        final int TEMP_OUT      = 0x41; // 16-bit signed value (0x41-0x42)
+        final int ACCEL_X       = 0x3B; // 16-bit 2's comp. value (0x3B-0x3C)
+        final int ACCEL_Y       = 0x3D; // 16-bit 2's comp. value (0x3D-0x3E)
+        final int ACCEL_Z       = 0x3F; // 16-bit 2's comp. value (0x3F-0x40)
+        final int GYRO_X        = 0x43; // 16-bit 2's comp. value (0x43-0x44)
+        final int GYRO_Y        = 0x45; // 16-bit 2's comp. value (0x45-0x46)
+        final int GYRO_Z        = 0x47; // 16-bit 2's comp. value (0x47-0x48)
+        final float ACC_SCALE = 16384; // LSB/g for +/- 2g range
+        final float GYR_SCALE = 32.8f; // LSB/deg/s for +/- 1000 deg/s range
+
+        // Gyro, Accelerometer and Temperature values in big-endian
+        float accX, accY, accZ, gyrX, gyrY, gyrZ, temp;
+        ByteBuffer bb = ByteBuffer.allocate(14);
+        bb.order(ByteOrder.LITTLE_ENDIAN);
+
+        try {
+            // Read data from MPU6050 registers and convert to g, deg/s, and C
+            MPU6050.read(INT_STATUS); // reset int status by reading INT_STATUS register
+            accX = readShort(ACCEL_X) / ACC_SCALE;
+            accY = readShort(ACCEL_Y) / ACC_SCALE;
+            accZ = readShort(ACCEL_Z) / ACC_SCALE;
+            gyrX = readShort(GYRO_X) / GYR_SCALE;
+            gyrY = readShort(GYRO_Y) / GYR_SCALE;
+            gyrZ = readShort(GYRO_Z) / GYR_SCALE;
+            temp = readShort(TEMP_OUT) / 340f + 36.53f; // see register map for this conversion
+        } catch (IOException e){
+            System.err.println("interruptListener: Failed to read sensor data.");
+            e.printStackTrace();
+            return;
+        }
+
+        // Put data from MPU6050 registers into byte buffer to broadcast on endpoints
+        bb.putFloat(accX);
+        bb.putFloat(accY);
+        bb.putFloat(accZ);
+        bb.putFloat(gyrX);
+        bb.putFloat(gyrY);
+        bb.putFloat(gyrZ);
+        bb.putFloat(temp);
+        System.out.println("Broadcasting attitude data...");
+        AttitudeEndpoint.broadcast(bb);
     }
 }
