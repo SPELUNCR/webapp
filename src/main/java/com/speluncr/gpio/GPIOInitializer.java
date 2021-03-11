@@ -12,11 +12,11 @@ public class GPIOInitializer {
     private static final GPIOInitializer gpioInitializer = new GPIOInitializer();
     private static final GpioController gpioController = GpioFactory.getInstance();
 
-    static GPIOInitializer getInstance(){
+    public static GPIOInitializer getInstance(){
         return gpioInitializer;
     }
 
-    GpioController getGpioController(){
+    public GpioController getGpioController(){
         return gpioController;
     }
 }

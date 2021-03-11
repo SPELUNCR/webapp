@@ -1,6 +1,7 @@
 package com.speluncr;
 
 import com.speluncr.gpio.AttitudeSensor;
+import com.speluncr.gpio.GPIOInitializer;
 import com.speluncr.gpio.RadiationSensor;
 import javax.servlet.http.HttpServlet;
 import java.io.BufferedReader;
@@ -33,6 +34,7 @@ public class TelemetryServlet extends HttpServlet {
         System.out.println("Geiger Counter Stopped");
         as.stopSensor();
         System.out.println("Attitude Sensor Stopped");
+        GPIOInitializer.getInstance().getGpioController().shutdown();
     }
 
     private void LoadProperties(){
