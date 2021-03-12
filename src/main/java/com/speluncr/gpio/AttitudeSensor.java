@@ -120,7 +120,7 @@ public class AttitudeSensor implements Sensor{
 
         // Gyro, Accelerometer and Temperature values in big-endian
         float accX, accY, accZ, gyrX, gyrY, gyrZ, temp;
-        ByteBuffer bb = ByteBuffer.allocate(28);
+        ByteBuffer bb = ByteBuffer.wrap(new byte[28]);
         bb.order(ByteOrder.LITTLE_ENDIAN);
 
         try {
@@ -147,7 +147,8 @@ public class AttitudeSensor implements Sensor{
         bb.putFloat(gyrY);
         bb.putFloat(gyrZ);
         bb.putFloat(temp);
-        System.out.println("Broadcasting attitude data...");
+        bb.position(0); // The websocket sendBinary() method doesn't seem to like other positions
+        //System.out.println("Broadcasting attitude data...");
         AttitudeEndpoint.broadcast(bb);
     }
 }
