@@ -32,7 +32,7 @@ ATTITUDE_SOCKET.onmessage = function(event) {
         // Set table element values
         var element = document.getElementById(id);
         if (element != null){
-            element.innerHTML = value.toPrecision(4);
+            element.innerHTML = value.toFixed(2);
         }
         idx++;
     }
