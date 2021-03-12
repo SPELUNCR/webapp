@@ -14,7 +14,8 @@ public class AttitudeEndpoint {
     private static final Set<AttitudeEndpoint> ENDPTS = new HashSet<>();
     private static final ArrayBlockingQueue<ByteBuffer> SEND_QUEUE = new ArrayBlockingQueue<>(3);
     private static boolean broadcasting = false;
-    private static final Thread BROADCAST_THREAD = new Thread(() -> {
+    private static Thread broadcastThread;
+    private static final Runnable BROADCAST_RUNNABLE = () -> {
         broadcasting = true;
         while(broadcasting){
             try {
@@ -28,30 +29,44 @@ public class AttitudeEndpoint {
                         broadcasting ? "true":"false");
             }
         }
-    }, "Endpoint_Broadcast");
+    };
 
     @OnOpen
     public void onOpen(Session session){
         session.setMaxIdleTimeout(10000); // 10 second timeout (no messages in 10 s)
         this.session = session;
-        if (ENDPTS.isEmpty()){
-            BROADCAST_THREAD.start();
+        if (broadcastThread == null || !broadcastThread.isAlive()){
+            System.out.println("Starting broadcast thread...");
+            broadcastThread = new Thread(BROADCAST_RUNNABLE, "Attitude_Broadcast");
+            broadcastThread.start();
         }
         ENDPTS.add(this);
-        System.out.println("Attitude Endpoint Session Opened.");
+        System.out.printf("Attitude Endpoint Session %s Opened.\n", session.getId());
     }
 
     @OnClose
-    public void onClose(Session session){
+    public void onClose(){
         ENDPTS.remove(this);
 
         // End runnable if there are no sockets to broadcast to
         if (ENDPTS.isEmpty()){
             SEND_QUEUE.clear();
             broadcasting = false;
-            BROADCAST_THREAD.interrupt();
+            broadcastThread.interrupt();
         }
-        System.out.println("Attitude Endpoint Session Closed.");
+        System.out.printf("Attitude Endpoint Session %s Closed.\n", session.getId());
+    }
+
+    @OnError
+    public void onError(Session session, Throwable throwable){
+        ENDPTS.remove(this);
+        System.err.printf("Attitude Endpoint Session %s Error: %s\n", session.getId(), throwable);
+        try {
+            session.close();
+        } catch (IOException e){
+            System.err.println("onError(): Failed to close session after error occurred.");
+            e.printStackTrace();
+        }
     }
 
     public static void broadcast(ByteBuffer buffer){
