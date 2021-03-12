@@ -73,7 +73,7 @@ public class AttitudeSensor implements Sensor{
         POLLING_TIMER.schedule(new TimerTask() {
             @Override
             public void run() {
-                readAttitudeData();
+                AttitudeEndpoint.broadcast(readAttitudeData());
             }
         }, 0, 33); // Immediately start reading attitude data every 33 ms (30.3 Hz)
     }
@@ -92,6 +92,7 @@ public class AttitudeSensor implements Sensor{
         }
     }
 
+    // Read two bytes from the MPU6050 register and cast to float
     private float read16ToFloat(int addr) throws IOException{
         byte[] bytes = new byte[2];
         ByteBuffer bb = ByteBuffer.wrap(bytes);
@@ -100,7 +101,9 @@ public class AttitudeSensor implements Sensor{
         return bb.getShort();
     }
 
-    private void readAttitudeData(){
+    // Read the MPU6050 sensor registers and return a ByteBuffer of floats
+    // The order of returned values is: accX, accY, accZ, gyrX, gyrY, gyrZ, temp
+    private ByteBuffer readAttitudeData(){
         final int TEMP_OUT      = 0x41; // 16-bit signed value (0x41-0x42)
         final int ACCEL_X       = 0x3B; // 16-bit 2's comp. value (0x3B-0x3C)
         final int ACCEL_Y       = 0x3D; // 16-bit 2's comp. value (0x3D-0x3E)
@@ -112,7 +115,7 @@ public class AttitudeSensor implements Sensor{
         final float GYR_SCALE = 32.8f; // LSB/deg/s for +/- 1000 deg/s range
 
         // Gyro, Accelerometer and Temperature values in big-endian
-        float accX, accY, accZ, gyrX, gyrY, gyrZ, temp;
+        float accX = 0, accY = 0, accZ = 0, gyrX = 0, gyrY = 0, gyrZ = 0, temp = 0;
         ByteBuffer bb = ByteBuffer.wrap(new byte[28]);
         bb.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -128,10 +131,9 @@ public class AttitudeSensor implements Sensor{
         } catch (IOException e){
             System.err.println("readAttitudeData(): Failed to read sensor data.");
             e.printStackTrace();
-            return;
         }
 
-        // Put data from MPU6050 registers into byte buffer to broadcast on endpoints
+        // Put data from MPU6050 registers into byte buffer to return
         bb.putFloat(accX);
         bb.putFloat(accY);
         bb.putFloat(accZ);
@@ -140,6 +142,6 @@ public class AttitudeSensor implements Sensor{
         bb.putFloat(gyrZ);
         bb.putFloat(temp);
         bb.position(0); // The websocket sendBinary() method doesn't seem to like other positions
-        AttitudeEndpoint.broadcast(bb);
+        return bb;
     }
 }
