@@ -1,7 +1,6 @@
 package com.speluncr.gpio;
 
 import com.pi4j.io.gpio.*;
-import com.pi4j.io.gpio.event.GpioPinListenerDigital;
 import com.pi4j.io.i2c.I2CBus;
 import com.pi4j.io.i2c.I2CDevice;
 import com.pi4j.io.i2c.I2CFactory;
@@ -9,11 +8,13 @@ import com.speluncr.websocket.AttitudeEndpoint;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /************************************************************
  * This class will initialize the MPU6050 attitude sensor,
- * read data when it arrives and broadcast the data on all
- * AttitudeEnpoints.
+ * then read data and broadcast the data on all
+ * AttitudeEnpoints at 30 Hz.
  *
  * THE LOGICAL PIN NUMBERS DO NOT ALWAYS MATCH THE PHYSICAL
  * PIN NUMBERS. Refer to the pi4j pin diagram at the url:
@@ -22,7 +23,7 @@ import java.nio.ByteOrder;
 public class AttitudeSensor implements Sensor{
     private I2CBus bus = null;
     private I2CDevice MPU6050 = null;
-    private GpioPinDigitalInput interrupt = null;
+    private final Timer POLLING_TIMER = new Timer("Attitude Polling Timer");
 
     public void initializeSensor(){
         final int MPU6050_ADDR  = 0x69; // 0x68 when ADO set low. 0x69 when ADO set high
@@ -61,7 +62,7 @@ public class AttitudeSensor implements Sensor{
             MPU6050.write(GYRO_CONFIG, (byte) 0x10); // Set full scale range to +/- 1000 deg/s
             MPU6050.write(ACCEL_CONFIG, (byte) 0x00); // Set full scale range to +/- 2g
             MPU6050.write(INT_PIN_CFG, (byte) 0x00); // active high, push-pull, high until status read
-            MPU6050.write(INT_ENABLE, (byte) 0x01); // Enable data ready interrupts on interrupt pin (open drain)
+            MPU6050.write(INT_ENABLE, (byte) 0x00); // Enable data ready interrupts on interrupt pin (open drain)
             System.out.println("Sensor configuration registers have been set.");
         } catch (IOException e){
             System.err.println("initializeSensor(): Failed to set configuration registers.");
@@ -69,23 +70,16 @@ public class AttitudeSensor implements Sensor{
             return;
         }
 
-        // Configure pin as interrupt GPIO_15 is physical pin 8
-        interrupt = GPIOInitializer.getInstance().getGpioController()
-                .provisionDigitalInputPin(RaspiPin.GPIO_15, PinPullResistance.OFF);
-
-        // Add listener for when interrupt pin goes low. This means data is ready.
-        interrupt.addListener((GpioPinListenerDigital) event -> {
-            if (event.getState().isHigh()){
+        POLLING_TIMER.schedule(new TimerTask() {
+            @Override
+            public void run() {
                 readAttitudeData();
             }
-        });
+        }, 0, 33); // Immediately start reading attitude data every 33 ms (30.3 Hz)
     }
 
     public void stopSensor(){
-        // If interrupt was initialized, remove all its listeners
-        if (interrupt != null){
-            interrupt.removeAllListeners();
-        }
+        POLLING_TIMER.cancel();
 
         // Close I2C bus if open
         if (bus != null){
@@ -107,7 +101,6 @@ public class AttitudeSensor implements Sensor{
     }
 
     private void readAttitudeData(){
-        final int INT_STATUS    = 0x3A; // interrupt status register
         final int TEMP_OUT      = 0x41; // 16-bit signed value (0x41-0x42)
         final int ACCEL_X       = 0x3B; // 16-bit 2's comp. value (0x3B-0x3C)
         final int ACCEL_Y       = 0x3D; // 16-bit 2's comp. value (0x3D-0x3E)
@@ -125,7 +118,6 @@ public class AttitudeSensor implements Sensor{
 
         try {
             // Read data from MPU6050 registers and convert to g, deg/s, and C
-            MPU6050.read(INT_STATUS); // reset int status by reading INT_STATUS register
             accX = read16ToFloat(ACCEL_X) / ACC_SCALE;
             accY = read16ToFloat(ACCEL_Y) / ACC_SCALE;
             accZ = read16ToFloat(ACCEL_Z) / ACC_SCALE;
@@ -134,7 +126,7 @@ public class AttitudeSensor implements Sensor{
             gyrZ = read16ToFloat(GYRO_Z) / GYR_SCALE;
             temp = read16ToFloat(TEMP_OUT) / 340f + 36.53f; // see register map for this conversion
         } catch (IOException e){
-            System.err.println("interruptListener: Failed to read sensor data.");
+            System.err.println("readAttitudeData(): Failed to read sensor data.");
             e.printStackTrace();
             return;
         }
@@ -148,7 +140,6 @@ public class AttitudeSensor implements Sensor{
         bb.putFloat(gyrZ);
         bb.putFloat(temp);
         bb.position(0); // The websocket sendBinary() method doesn't seem to like other positions
-        //System.out.println("Broadcasting attitude data...");
         AttitudeEndpoint.broadcast(bb);
     }
 }

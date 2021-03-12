@@ -22,13 +22,6 @@ public class AttitudeEndpoint {
                 try {
                     // take() blocks until a message is on the queue. Then it returns the message
                     ByteBuffer msg = sendQueue.take();
-                    /*ByteBuffer msg = ByteBuffer.wrap(new byte[28]);
-                    msg.order(ByteOrder.LITTLE_ENDIAN);
-                    for (int r = 0; r < 7; r++){
-                        msg.putFloat((float) Math.random());
-                    }
-                    msg.position(0);
-                    */
                     session.getBasicRemote().sendBinary(msg);
                 } catch (InterruptedException | IOException e) {
                     System.out.printf("Broadcast interrupted. Broadcast = %s\n",
