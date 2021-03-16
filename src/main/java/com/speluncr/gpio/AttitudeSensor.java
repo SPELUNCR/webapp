@@ -25,7 +25,7 @@ public class AttitudeSensor implements Sensor{
     private I2CDevice MPU6050 = null;
     private final Timer POLLING_TIMER = new Timer("Attitude Polling Timer");
 
-    public void initializeSensor(){
+    public void startSensor(){
         final int MPU6050_ADDR  = 0x69; // 0x68 when ADO set low. 0x69 when ADO set high
         final int CONFIG        = 0x1A; // framesync and low pass filtering (use 3)
         final int SMPLRT_DIV    = 0x19; // Sample Rate (8 or 1 kHz) = Gyroscope Output Rate / (1 + SMPLRT_DIV)
