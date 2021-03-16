@@ -22,7 +22,6 @@ body {
   }
 }
 
-
 h1 {
     color: #03549F;
     font-size: 2rem;
@@ -102,6 +101,11 @@ img {
     max-width: 100%;
     height: auto;
     box-sizing: border-box;
+}
+
+video {
+    width:60%;
+    margin:auto;
 }
 
 table {

@@ -45,7 +45,7 @@ public class AttitudeEndpoint {
     }
 
     @OnClose
-    public void onClose(){
+    public void onClose(Session session){
         ENDPTS.remove(this);
 
         // End runnable if there are no sockets to broadcast to
@@ -64,7 +64,7 @@ public class AttitudeEndpoint {
         try {
             session.close();
         } catch (IOException e){
-            System.err.println("onError(): Failed to close session after error occurred.");
+            System.err.printf("onError(): Failed to close session %s after error occurred.", session.getId());
             e.printStackTrace();
         }
     }
