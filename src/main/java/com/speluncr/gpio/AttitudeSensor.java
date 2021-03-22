@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Timer;
 import java.util.TimerTask;
+import static java.lang.Math.*;
 
 /************************************************************
  * This class will initialize the MPU6050 attitude sensor,
@@ -21,6 +22,7 @@ import java.util.TimerTask;
  * https://pi4j.com/1.4/pins/rpi-4b.html
  ************************************************************/
 public class AttitudeSensor implements Sensor{
+    private long lastMeasTime = System.nanoTime();
     private I2CBus bus = null;
     private I2CDevice MPU6050 = null;
     private final Timer POLLING_TIMER = new Timer("Attitude Polling Timer");
@@ -69,11 +71,12 @@ public class AttitudeSensor implements Sensor{
             e.printStackTrace();
             return;
         }
+        lastMeasTime = System.nanoTime(); // Used to find time difference for integrating gyro data
 
         POLLING_TIMER.schedule(new TimerTask() {
             @Override
             public void run() {
-                AttitudeEndpoint.broadcast(readAttitudeData());
+                AttitudeEndpoint.broadcast(getAttitude());
             }
         }, 0, 33); // Immediately start reading attitude data every 33 ms (30.3 Hz)
     }
@@ -93,7 +96,7 @@ public class AttitudeSensor implements Sensor{
     }
 
     // Read two bytes from the MPU6050 register and cast to float
-    private float read16ToFloat(int addr) throws IOException{
+    private double read16ToDouble(int addr) throws IOException{
         byte[] bytes = new byte[2];
         ByteBuffer bb = ByteBuffer.wrap(bytes);
         bb.order(ByteOrder.BIG_ENDIAN);
@@ -103,45 +106,56 @@ public class AttitudeSensor implements Sensor{
 
     // Read the MPU6050 sensor registers and return a ByteBuffer of floats
     // The order of returned values is: accX, accY, accZ, gyrX, gyrY, gyrZ, temp
-    private ByteBuffer readAttitudeData(){
+    private ByteBuffer getAttitude(){
         final int TEMP_OUT      = 0x41; // 16-bit signed value (0x41-0x42)
         final int ACCEL_X       = 0x3B; // 16-bit 2's comp. value (0x3B-0x3C)
         final int ACCEL_Y       = 0x3D; // 16-bit 2's comp. value (0x3D-0x3E)
         final int ACCEL_Z       = 0x3F; // 16-bit 2's comp. value (0x3F-0x40)
         final int GYRO_X        = 0x43; // 16-bit 2's comp. value (0x43-0x44)
         final int GYRO_Y        = 0x45; // 16-bit 2's comp. value (0x45-0x46)
-        final int GYRO_Z        = 0x47; // 16-bit 2's comp. value (0x47-0x48)
-        final float ACC_SCALE = 16384; // LSB/g for +/- 2g range
-        final float GYR_SCALE = 32.8f; // LSB/deg/s for +/- 1000 deg/s range
+        // final int GYRO_Z        = 0x47; // 16-bit 2's comp. value (0x47-0x48)
+        final double ACC_SCALE = 16384; // LSB/g for +/- 2g range
+        final double GYR_SCALE = 32.8f; // LSB/deg/s for +/- 1000 deg/s range
 
         // Gyro, Accelerometer and Temperature values in big-endian
-        float accX = 0, accY = 0, accZ = 0, gyrX = 0, gyrY = 0, gyrZ = 0, temp = 0;
-        ByteBuffer bb = ByteBuffer.wrap(new byte[28]);
+        double accX = 0, accY = 0, accZ = 0, gyrX = 0, gyrY = 0, temp = 0; //gyrZ = 0
+        ByteBuffer bb = ByteBuffer.wrap(new byte[4*Double.BYTES]);
         bb.order(ByteOrder.LITTLE_ENDIAN);
 
         try {
             // Read data from MPU6050 registers and convert to g, deg/s, and C
-            accX = read16ToFloat(ACCEL_X) / ACC_SCALE;
-            accY = read16ToFloat(ACCEL_Y) / ACC_SCALE;
-            accZ = read16ToFloat(ACCEL_Z) / ACC_SCALE;
-            gyrX = read16ToFloat(GYRO_X) / GYR_SCALE;
-            gyrY = read16ToFloat(GYRO_Y) / GYR_SCALE;
-            gyrZ = read16ToFloat(GYRO_Z) / GYR_SCALE;
-            temp = read16ToFloat(TEMP_OUT) / 340f + 36.53f; // see register map for this conversion
+            accX = read16ToDouble(ACCEL_X) / ACC_SCALE;
+            accY = read16ToDouble(ACCEL_Y) / ACC_SCALE;
+            accZ = read16ToDouble(ACCEL_Z) / ACC_SCALE;
+            gyrX = read16ToDouble(GYRO_X) / GYR_SCALE;
+            gyrY = read16ToDouble(GYRO_Y) / GYR_SCALE;
+            // gyrZ = read16ToDouble(GYRO_Z) / GYR_SCALE;
+            temp = read16ToDouble(TEMP_OUT) / 340d + 36.53d; // see register map for this conversion
         } catch (IOException e){
             System.err.println("readAttitudeData(): Failed to read sensor data.");
             e.printStackTrace();
         }
 
+        // Apply complementary filter to combine accel. and gyro to determine attitude
+        // Don't care about yaw since only roll and pitch can flip rover
+        final double A = 0.9836; // Constant for complementary filter tau = 2s, dt = 1/30
+        double roll = 0, pitch = 0, yaw = 0;
+
+        // Calculate time period to integrate gyro data and update measurement time
+        long currMeasTime = System.nanoTime();
+        double dt = (1000000000d)*(currMeasTime - lastMeasTime); // time since last sample (s)
+        lastMeasTime = currMeasTime;
+
+        // Filtered roll and pitch values
+        double magAcc = sqrt(pow(accX, 2d)+pow(accY, 2d)+pow(accZ, 2d)); // Magnitude of acceleration vector
+        roll = (1 - A)*(roll - gyrX*dt) + A*atan2(-accY/magAcc, -accZ/magAcc);
+        pitch = (1 - A)*(pitch - gyrY*dt) + A*asin(accX / magAcc);
+
         // Put data from MPU6050 registers into byte buffer to return
-        bb.putFloat(accX);
-        bb.putFloat(accY);
-        bb.putFloat(accZ);
-        bb.putFloat(gyrX);
-        bb.putFloat(gyrY);
-        bb.putFloat(gyrZ);
-        bb.putFloat(temp);
-        bb.position(0); // The websocket sendBinary() method doesn't seem to like other positions
+        bb.putDouble(toDegrees(roll));
+        bb.putDouble(toDegrees(pitch));
+        bb.putDouble(toDegrees(yaw));
+        bb.putDouble(temp);
         return bb;
     }
 }

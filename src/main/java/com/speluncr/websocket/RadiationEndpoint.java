@@ -1,10 +1,13 @@
 package com.speluncr.websocket;
 
+import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -19,7 +22,7 @@ public class RadiationEndpoint {
         ENDPTS.add(this);
     }
 
-    @OnOpen
+    @OnClose
     public void onClose(Session session){
         ENDPTS.remove(this);
         System.out.printf("Radiation Endpoint Session %s Closed.\n", session.getId());
@@ -40,7 +43,11 @@ public class RadiationEndpoint {
     public static synchronized void broadcast(int cps){
         try {
             for (RadiationEndpoint endpt : ENDPTS) {
-                endpt.session.getBasicRemote().sendText(String.valueOf(cps));
+                ByteBuffer payload = ByteBuffer.allocate(Integer.BYTES);
+                payload.order(ByteOrder.LITTLE_ENDIAN);
+                payload.putInt(cps);
+                payload.position(0);
+                endpt.session.getBasicRemote().sendBinary(payload);
             }
         } catch (IOException e){
             e.printStackTrace();

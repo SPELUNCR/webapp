@@ -71,6 +71,7 @@ public class AttitudeEndpoint {
 
     public static void broadcast(ByteBuffer buffer){
         try {
+            buffer.position(0); // The websocket sendBinary() method doesn't seem to like other positions
             // drop item at head of queue if queue gets too backed up
             if (SEND_QUEUE.remainingCapacity() == 0){
                 SEND_QUEUE.take(); // should not block since remaining capacity is 0

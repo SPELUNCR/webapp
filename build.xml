@@ -83,6 +83,11 @@
     <target name="build" depends="compile" description="create binary distribution">
         <!-- Create jar file -->
         <jar jarfile="${dist.home}/${app.name}.war" basedir="${build.home}"/>
+        <copy todir="${dist.home}" file="${basedir}/start"/>
+        <copy todir="${dist.home}" file="${basedir}/stop"/>
+        <copy todir="${dist.home}" file="${basedir}/deploy"/>
+        <copy todir="${dist.home}" file="${basedir}/LICENSE.txt"/>
+        <copy todir="${dist.home}" file="${basedir}/README.md"/>
     </target>
 
     <target name="clean">

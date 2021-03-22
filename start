@@ -1,0 +1,25 @@
+#!/bin/bash
+
+function start {
+	# Execute all commands to start SPELUNCR in here
+	sudo ${CATALINA_HOME}/bin/startup.sh # Start webapp
+}
+
+# First check if Apache Tomcat is installed. Then ask if user wishes to proceed if possible
+if sudo --prompt="Command access code required: " test -f "${CATALINA_HOME}/bin/startup.sh"; then
+	# Apache Tomcat startup script exists. Ask if user wishes to continue
+	read -p "The webapp can be started [Make it so / Shut up Wesley] " response
+	if [ "${response,,}" == "make it so" ]; then
+		# User wants to and can start SPELUNCR
+		echo "Aye captain."
+		start
+	else
+		# User does not want to start SPELUNCR.
+		# Inform user of disaster he or she just avoided.
+		echo "Auto destruct sequence aborted."
+	fi
+else
+	# Apache Tomcat is not installed or not found. Notify user
+	echo "Apache Tomcat not installed or variable CATALINA_HOME not set."
+	echo "${CATALINA_HOME}/bin/startup.sh does not exist. Exiting."
+fi

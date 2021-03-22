@@ -17,12 +17,12 @@ public class TelemetryServlet extends HttpServlet {
     private final Properties properties = new Properties();
 
     public TelemetryServlet(){
-        LoadProperties();
         System.out.println("Telemetry servlet constructed");
     }
 
     @Override
     public void init() {
+        LoadProperties();
         gc.startSensor();
         System.out.println("Geiger Counter Initialized");
         as.startSensor();

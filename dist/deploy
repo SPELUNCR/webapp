@@ -1,0 +1,21 @@
+#!/bin/bash
+dest=$CATALINA_HOME/webapps/speluncr
+sudo rm -rf "$dest"
+sudo mkdir "$dest"
+if test -f "./speluncr.war"; then
+	echo "Extracting web archive..."
+	sudo cp ./speluncr.war "${dest}/speluncr.war"
+	cd "${dest}"
+	sudo jar -xvf "${dest}/speluncr.war"
+	sudo rm -f ./speluncr.war
+	echo "Extracted speluncr.war to $dest."
+	echo "Clearing logs..."
+	sudo rm -rf "${CATALINA_HOME}/logs"
+	sudo mkdir "${CATALINA_HOME}/logs"
+	echo  "Logs cleared."
+	echo  "Done."
+else
+	echo "speluncr.war does not exit in the current directory. Obtain it and try again."
+	exit 1
+fi
+exit 0

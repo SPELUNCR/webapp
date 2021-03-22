@@ -22,7 +22,7 @@ public class RadiationSensor implements Sensor {
     private final TelemetryServlet servlet;
     private DataOutputStream outputStream = null;
     private GpioPinDigitalInput inpin = null;
-    private long initTime = 0; // time when sensor started
+    private long initTime = System.nanoTime(); // time when sensor started
     private int cps = 0; // counts in the current 1-second period
 
     public RadiationSensor(TelemetryServlet telemetryServlet){
@@ -67,8 +67,9 @@ public class RadiationSensor implements Sensor {
 
         // Add listener to pin 7 to handle when signal goes low (count occurs)
         inpin.addListener((GpioPinListenerDigital) event -> {
-            if (event.getState().isLow()){
+  //          if (event.getState().isLow()){
                 long time = System.nanoTime() - initTime; // get time of event relative to initTime
+                System.out.println("Radiation Detected.");
                 cps++;
 
                 // Write raw interrupt time to data file
@@ -78,7 +79,7 @@ public class RadiationSensor implements Sensor {
                     System.err.printf("count(): Failed to write value %d to data file\n", time);
                     e.printStackTrace();
                 }
-            }
+//            }
         });
 
         COUNT_TIMER.schedule(new TimerTask() {
