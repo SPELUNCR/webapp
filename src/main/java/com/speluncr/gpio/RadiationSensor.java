@@ -1,9 +1,6 @@
 package com.speluncr.gpio;
 
-import com.pi4j.io.gpio.GpioPinDigitalInput;
-import com.pi4j.io.gpio.PinPullResistance;
-import com.pi4j.io.gpio.RaspiPin;
-import com.pi4j.io.gpio.event.GpioPinListenerDigital;
+import com.pi4j.wiringpi.Gpio;
 import com.speluncr.TelemetryServlet;
 import com.speluncr.websocket.RadiationEndpoint;
 import java.io.*;
@@ -18,10 +15,10 @@ import java.util.TimerTask;
  * access data collected from the geiger counter.
  ************************************************************/
 public class RadiationSensor implements Sensor {
+    private final int INTERRUPT_PIN = 7;
     private final Timer COUNT_TIMER = new Timer();
     private final TelemetryServlet servlet;
     private DataOutputStream outputStream = null;
-    private GpioPinDigitalInput inpin = null;
     private long initTime = System.nanoTime(); // time when sensor started
     private int cps = 0; // counts in the current 1-second period
 
@@ -58,47 +55,32 @@ public class RadiationSensor implements Sensor {
             }
         }
 
-        // Set pin 7 as digital input
-        inpin = GPIOInitializer.getInstance().getGpioController()
-                .provisionDigitalInputPin(RaspiPin.GPIO_07, PinPullResistance.PULL_UP);
+        // Setup wiring pi
+        if (Gpio.wiringPiSetup() == -1){
+            System.err.println("[ERROR] GPIO setup failed.");
+            return;
+        }
 
         // Set initial time
         initTime = System.nanoTime();
 
-        // Add listener to pin 7 to handle when signal goes low (count occurs)
-        inpin.addListener((GpioPinListenerDigital) event -> {
-  //          if (event.getState().isLow()){
-                long time = System.nanoTime() - initTime; // get time of event relative to initTime
-                System.out.println("Radiation Detected.");
-                cps++;
-
-                // Write raw interrupt time to data file
-                try {
-                    outputStream.writeLong(time);
-                } catch (IOException e){
-                    System.err.printf("count(): Failed to write value %d to data file\n", time);
-                    e.printStackTrace();
-                }
-//            }
-        });
+        // Configure input pin 7, activate pull-up resistor and attach interrupt callback method
+        Gpio.pinMode(INTERRUPT_PIN, Gpio.INPUT);
+        Gpio.pullUpDnControl(INTERRUPT_PIN, Gpio.PUD_UP);
+        Gpio.wiringPiISR(INTERRUPT_PIN, Gpio.INT_EDGE_FALLING, i -> incrementCount());
 
         COUNT_TIMER.schedule(new TimerTask() {
             @Override
-            public void run() {
+            public synchronized void run() {
                 RadiationEndpoint.broadcast(cps); // send the number of counts for this second to all endpoints
                 cps = 0; // reset count to 0 for next 1-second interval
             }
         }, 0, 1000);
     }
 
-    public void stopSensor(){
+    public synchronized void stopSensor(){
         System.out.println("Stopping Geiger Counter...");
-
-        // If inpin was initialized, then remove its listeners
-        if (inpin != null){
-            inpin.removeAllListeners();
-            GPIOInitializer.getInstance().getGpioController().unprovisionPin(inpin);
-        }
+        Gpio.wiringPiClearISR(INTERRUPT_PIN);
 
         // Stop the update timer and set cps to 0
         COUNT_TIMER.cancel();
@@ -112,6 +94,19 @@ public class RadiationSensor implements Sensor {
             } catch (IOException e){
                 e.printStackTrace();
             }
+        }
+    }
+
+    private synchronized void incrementCount(){
+        long time = System.nanoTime() - initTime; // get time of event relative to initTime
+        cps++;
+
+        // Write raw interrupt time to data file
+        try {
+            outputStream.writeLong(time);
+        } catch (IOException e){
+            System.err.printf("count(): Failed to write value %d to data file\n", time);
+            e.printStackTrace();
         }
     }
 }

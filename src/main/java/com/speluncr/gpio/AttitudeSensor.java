@@ -143,7 +143,7 @@ public class AttitudeSensor implements Sensor{
 
         // Calculate time period to integrate gyro data and update measurement time
         long currMeasTime = System.nanoTime();
-        double dt = (1000000000d)*(currMeasTime - lastMeasTime); // time since last sample (s)
+        double dt = (currMeasTime - lastMeasTime) / (1000000000d); // time since last sample (s)
         lastMeasTime = currMeasTime;
 
         // Filtered roll and pitch values
@@ -152,6 +152,7 @@ public class AttitudeSensor implements Sensor{
         pitch = (1 - A)*(pitch - gyrY*dt) + A*asin(accX / magAcc);
 
         // Put data from MPU6050 registers into byte buffer to return
+        //System.out.printf("R = %.2f, P = %.2f, Y = %.2f\n", toDegrees(roll), toDegrees(pitch), toDegrees(yaw));
         bb.putDouble(toDegrees(roll));
         bb.putDouble(toDegrees(pitch));
         bb.putDouble(toDegrees(yaw));
