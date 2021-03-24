@@ -45,7 +45,7 @@ animate();
 // Set navball orientation from roll, pitch and yaw values
 function setNavballRPY(roll, pitch, yaw){
 	if (typeof navball !== 'undefined'){
-		navball.setRotationFromEuler(new THREE.Euler(-pitch, -yaw, -roll, 'XYZ'));
+		navball.setRotationFromEuler(new THREE.Euler(-pitch, yaw, roll, 'XYZ'));
 	}
 }
 
