@@ -13,7 +13,6 @@
 			margin:0;
 			padding:0;
 		}
-
 		body {
 			color:yellow;
 			width:100%;
@@ -22,7 +21,6 @@
 			padding:0;
 			overflow:hidden;
 		}
-
 		table {
 			background-color:black;
 			border-spacing: 0;
@@ -38,18 +36,35 @@
 			padding: 0px; 
 			margin: 0px;
 		}
-
 		iframe {
+			z-index:-1;
 			width:100%;
 			height:100%;
 			pointer-events:none;
 		}
-
 		#content {
 			height:100%;
 			position:absolute;
 			top:0;
 			left:0;
+		}
+
+		#glCanvas {
+			position:absolute;
+			bottom:0;
+			right:24px;
+			z-index:0;
+		}
+
+		.navball {
+			z-index:0;
+			position:absolute;
+			bottom:0;
+			right:0;
+			padding:0;
+			margin:0;
+			width:249px;
+			height:218px;
 		}
 	</style>
 </head>
@@ -57,65 +72,39 @@
 	<iframe src="https://www.youtube.com/embed/cd-ENrKr0CM?rel=0?version=3&autoplay=1&loop=1&controls=0" frameborder="0"
 		allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
 		allowfullscreen></iframe>
-
 	<div id="content">
 	    <p id="data">Attempting to Connect...<br></p>
 	    <table>
 	        <tr>
-	            <th>Roll (deg)</th>
+	            <th>Roll</th>
 	            <td id="roll"></td>
 	        </tr>
 	        <tr>
-	            <th>Pitch (deg)</th>
+	            <th>Pitch</th>
 	            <td id="pitch"></td>
 	        </tr>
 	        <tr>
-	            <th>Yaw (deg)</th>
+	            <th>Yaw</th>
 	            <td id="yaw"></td>
 	        </tr>
 	        <tr>
-	            <th>Temperature (deg C)</th>
+	            <th>Temperature</th>
 	            <td id="temp"></td>
 	        </tr>
 	        <tr>
-	            <th>Update Rate (Hz)</th>
+	            <th>Update Rate</th>
 	            <td id="attUpdateRate"></td>
 	        </tr>
 	        <tr>
-	            <th>Radiation (cps)</th>
+	            <th>Radiation</th>
 	            <td id="cps"></td>
 	        </tr>
 	    </table>
 	</div>
-
-	<script type="text/javascript" src="dataWebSocket.js"></script>
-
-    <!--
-    <script type="text/javascript" src="js/three.js"></script>
-    <script>
-        import * as THREE from 'three/build/three.module.js';
-        import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-
-        const canvas = document.querySelector('#glCanvas');
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera( 75, canvas.width / canvas.height, 0.1, 100 );
-        const renderer = new THREE.WebGLRenderer({canvas});
-        const loader = new GLTFLoader();
-        loader.load( 'DabsterChief.glb', function ( gltf ) {
-	        scene.add( gltf.scene );
-        }, undefined, function ( error ) {
-	        console.error( error );
-        });
-
-        camera.position.z = 5;
-
-        const animate = function () {
-            requestAnimationFrame( animate );
-
-            renderer.render( scene, camera );
-        };
-
-        animate();
-	</script> -->
+	<div class="navball">
+		<img src="images/navball.png" style="z-index:1;position:absolute;bottom:0;right:0;">
+		<canvas id="glCanvas" width="200" height="200"></canvas>
+	</div>
+	<script type="module" src="dataWebSocket.js"></script>
 </body>
 </html>

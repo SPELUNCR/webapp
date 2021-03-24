@@ -172,9 +172,9 @@ public class AttitudeSensor implements Sensor{
 
         // Put data from MPU6050 registers into byte buffer to return
         //System.out.printf("R = %.2f, P = %.2f, Y = %.2f\n", toDegrees(roll), toDegrees(pitch), toDegrees(yaw));
-        bb.putDouble(toDegrees(roll));
-        bb.putDouble(toDegrees(pitch));
-        bb.putDouble(toDegrees(yaw));
+        bb.putDouble(roll);
+        bb.putDouble(pitch);
+        bb.putDouble(yaw);
         bb.putDouble(temp);
         return bb;
     }

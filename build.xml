@@ -33,15 +33,6 @@
         <pathelement location="${util.jar}"/>
         <pathelement location="${websocket.jar}"/>
         <pathelement location="${websocketapi.jar}"/>
-
-        <!-- Include all elements that Tomcat exposes to applications
-        <fileset dir="${tomcat.home}/bin">
-            <include name="*.jar"/>
-        </fileset>
-        <pathelement location="${tomcat.home}/lib"/>
-        <fileset dir="${tomcat.home}/lib">
-            <include name="*.jar"/>
-        </fileset> -->
     </path>
 
     <target name="prepare">

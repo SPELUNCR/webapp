@@ -4,6 +4,55 @@
 * Author: Paul Hemsworth    Email: hemsworp@my.erau.edu
 *******************************************************/
 
+/**********************************************************
+* NAVBALL RENDERING AND ANIMATION
+* Three.js code for loading and animating the navball
+**********************************************************/
+import * as THREE from './node_modules/three/build/three.module.js';
+import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+
+// Setup scene
+const canvas = document.querySelector('#glCanvas'); // html canvas element to render on
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(10, canvas.width / canvas.height, 0.1, 20);
+const light = new THREE.AmbientLight(0xffffff);
+scene.add(light);
+
+// Set up scene renderer using the canvas and transparent background
+const renderer = new THREE.WebGLRenderer({canvas, alpha:true});
+renderer.setSize(canvas.width, canvas.height);
+
+// Load the navball
+var navball; // use this to access navball later
+const loader = new GLTFLoader();
+loader.load('navball.gltf', function(gltf) {
+	navball = gltf.scene;
+    scene.add(gltf.scene);
+}, undefined, function (error) {
+    console.error(error);
+});
+
+camera.position.z = 12;
+
+// Set up scene animation
+const animate = function () {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+};
+
+animate();
+
+// Set navball orientation from roll, pitch and yaw values
+function setNavballRPY(roll, pitch, yaw){
+	if (typeof navball !== 'undefined'){
+		navball.setRotationFromEuler(new THREE.Euler(-pitch, -yaw, -roll, 'XYZ'));
+	}
+}
+
+/**********************************************************
+* WEBSOCKET CONNECTION
+* Connects to the java servlet to obtain data from SPELUNCR
+**********************************************************/
 var attUps = 0; // Attitude updates per second
 var attUpsTimer = setInterval(repAttRate, 1000); // Report update rate every second
 
@@ -29,30 +78,31 @@ function websocketOpen(event, socketName){
 }
 
 // Event handlers for the websockets receiving data
+// Server data is in little endian as this is most common.
+// There will be trouble if a system using big endian data tries to read this
 ATTITUDE_SOCKET.onmessage = function(event) {
-    // Server data is in little endian as this is most common.
-    // There will be trouble if a system using big endian data tries to read this
-    const IDS = ["roll","pitch","yaw","temp"];
+	// Interpret data
     const buffer = new Float64Array(event.data);
+	const roll	= buffer[0];
+	const pitch = buffer[1];
+	const yaw 	= buffer[2];
+	const temp	= buffer[3];
 
-    // Go through array of received data and set the corresponding HTML element
-    var value, idx = 0;
-    for (value of buffer){
-        // Set table element values
-        var element = document.getElementById(IDS[idx]);
-        if (element != null){
-            element.innerHTML = value.toFixed(2);
-        }
-        idx++;
-    }
+	// Change navball orientation
+	setNavballRPY(roll, pitch, yaw);
+
+	// Set values of HTML table elements
+	document.getElementById("roll").innerHTML = (roll * 180 / Math.PI).toFixed(2) + '&deg';
+	document.getElementById("pitch").innerHTML = (pitch * 180 / Math.PI).toFixed(2) + '&deg';
+	document.getElementById("yaw").innerHTML = (yaw * 180 / Math.PI).toFixed(2) + '&deg';
+	document.getElementById("temp").innerHTML = temp.toFixed(2) + "&degC";
+
     attUps++; // This counts as an attitude update. Increment the counter
 };
 
 RADIATION_SOCKET.onmessage = function(event) {
-    // Server data is in little endian as this is most common.
-    // There will be trouble if a system using big endian data tries to read this
     const buffer = new Int32Array(event.data);
-    document.getElementById('cps').innerHTML = buffer[0];
+    document.getElementById('cps').innerHTML = buffer[0] + " cps";
 };
 
 // Event handler for the websocket closing
@@ -73,8 +123,6 @@ function websocketClose(event, socketName){
     if (event.wasClean) {
         document.getElementById('data').innerHTML+=`${socketName} websocket closed cleanly, code=${event.code} reason=${event.reason}<br>`;
     } else {
-        // e.g. server process killed or network down
-        // event.code is usually 1006 in this case
         alert('[close] Connection died');
     }
 }
@@ -93,6 +141,6 @@ function websocketError(error, websocketName){
 
 // Report the attitude update rate
 function repAttRate(){
-    document.getElementById("attUpdateRate").innerHTML=attUps;
+    document.getElementById("attUpdateRate").innerHTML=attUps + " Hz";
     attUps=0;
 }
