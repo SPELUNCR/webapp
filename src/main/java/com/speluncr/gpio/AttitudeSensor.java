@@ -26,8 +26,9 @@ public class AttitudeSensor implements Sensor{
     private I2CBus bus = null;
     private I2CDevice MPU6050 = null;
     private final Timer POLLING_TIMER = new Timer("Attitude Polling Timer");
+    private boolean running = false;
 
-    public void startSensor(){
+    public synchronized void startSensor(){
         final int MPU6050_ADDR  = 0x69; // 0x68 when ADO set low. 0x69 when ADO set high
         final int CONFIG        = 0x1A; // framesync and low pass filtering (use 3)
         final int SMPLRT_DIV    = 0x19; // Sample Rate (8 or 1 kHz) = Gyroscope Output Rate / (1 + SMPLRT_DIV)
@@ -37,6 +38,11 @@ public class AttitudeSensor implements Sensor{
         final int INT_ENABLE    = 0x38; // Register enables interrupt generation
         final int PWR_MGMT_1    = 0x6B; // Power management 1
         final int PWR_MGMT_2    = 0x6C; // Power management 2
+
+        // Don't execute this method if the sensor is already running
+        if (running){
+            return;
+        }
 
         // Set ADO pin high (address = 0x69). GPIO_16 is physical pin 10
         final GpioPinDigitalOutput ADO = GPIOInitializer.getInstance().getGpioController()
@@ -79,9 +85,15 @@ public class AttitudeSensor implements Sensor{
                 AttitudeEndpoint.broadcast(getAttitude());
             }
         }, 0, 33); // Immediately start reading attitude data every 33 ms (30.3 Hz)
+        running = true;
     }
 
-    public void stopSensor(){
+    public synchronized void stopSensor(){
+        // Don't execute this method if sensor is not running
+        if (!running) {
+            return;
+        }
+
         POLLING_TIMER.cancel();
 
         // Close I2C bus if open
@@ -93,10 +105,11 @@ public class AttitudeSensor implements Sensor{
                 e.printStackTrace();
             }
         }
+        running = false;
     }
 
     // Read two bytes from the MPU6050 register and cast to float
-    private double read16ToDouble(int addr) throws IOException{
+    private synchronized double read16ToDouble(int addr) throws IOException{
         byte[] bytes = new byte[2];
         ByteBuffer bb = ByteBuffer.wrap(bytes);
         bb.order(ByteOrder.BIG_ENDIAN);
@@ -106,7 +119,7 @@ public class AttitudeSensor implements Sensor{
 
     // Read the MPU6050 sensor registers and return a ByteBuffer of floats
     // The order of returned values is: accX, accY, accZ, gyrX, gyrY, gyrZ, temp
-    private ByteBuffer getAttitude(){
+    private synchronized ByteBuffer getAttitude(){
         final int TEMP_OUT      = 0x41; // 16-bit signed value (0x41-0x42)
         final int ACCEL_X       = 0x3B; // 16-bit 2's comp. value (0x3B-0x3C)
         final int ACCEL_Y       = 0x3D; // 16-bit 2's comp. value (0x3D-0x3E)
@@ -148,8 +161,14 @@ public class AttitudeSensor implements Sensor{
 
         // Filtered roll and pitch values
         double magAcc = sqrt(pow(accX, 2d)+pow(accY, 2d)+pow(accZ, 2d)); // Magnitude of acceleration vector
-        roll = (1 - A)*(roll - gyrX*dt) + A*atan2(-accY/magAcc, -accZ/magAcc);
-        pitch = (1 - A)*(pitch - gyrY*dt) + A*asin(accX / magAcc);
+        double accRoll = atan2(accY/magAcc, accZ/magAcc);
+        double accPitch = asin(-accX/magAcc);
+        double gyrRoll = roll + gyrX*dt;
+        double gyrPitch = pitch + gyrY*dt;
+        roll = (1 - A)*(gyrRoll) + A*accRoll;
+        pitch = (1 - A)*(gyrPitch) + A*accPitch;
+        // System.out.printf("AccRoll = %.2f, GyrRoll = %.2f, AccPitch = %.2f, GyrPitch = %.2f, Acc = %.2f,%.2f,%.2f Gyr = %.2f,%.2f\n",
+        //        accRoll, gyrRoll, accPitch, gyrPitch, accX, accY, accZ, gyrX, gyrY);
 
         // Put data from MPU6050 registers into byte buffer to return
         //System.out.printf("R = %.2f, P = %.2f, Y = %.2f\n", toDegrees(roll), toDegrees(pitch), toDegrees(yaw));

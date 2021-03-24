@@ -16,18 +16,22 @@ import java.util.TimerTask;
  ************************************************************/
 public class RadiationSensor implements Sensor {
     private final int INTERRUPT_PIN = 7;
-    private final Timer COUNT_TIMER = new Timer();
+    private final Timer COUNT_TIMER = new Timer("Radiation Update Timer");
     private final TelemetryServlet servlet;
     private DataOutputStream outputStream = null;
     private long initTime = System.nanoTime(); // time when sensor started
     private int cps = 0; // counts in the current 1-second period
+    private boolean running = false;
 
     public RadiationSensor(TelemetryServlet telemetryServlet){
         servlet = telemetryServlet;
     }
 
-    public void startSensor(){
-        System.out.println("Initializing Geiger Counter...");
+    public synchronized void startSensor(){
+        // Don't execute this method if sensor is already running
+        if (running){
+            return;
+        }
 
         // Open a data file for the raw data
         String fileName = "radiation-" + LocalDateTime.now().toString() + ".data";
@@ -76,10 +80,15 @@ public class RadiationSensor implements Sensor {
                 cps = 0; // reset count to 0 for next 1-second interval
             }
         }, 0, 1000);
+        running = true;
     }
 
     public synchronized void stopSensor(){
-        System.out.println("Stopping Geiger Counter...");
+        // Don't execute this method if sensor is already stopped
+        if (!running){
+            return;
+        }
+
         Gpio.wiringPiClearISR(INTERRUPT_PIN);
 
         // Stop the update timer and set cps to 0
@@ -95,6 +104,7 @@ public class RadiationSensor implements Sensor {
                 e.printStackTrace();
             }
         }
+        running = false;
     }
 
     private synchronized void incrementCount(){
