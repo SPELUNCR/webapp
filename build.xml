@@ -57,7 +57,7 @@
         <mkdir dir="${build.home}/WEB-INF/classes"/>
 
         <!-- Compile java classes -->
-        <javac srcdir="${src.home}"
+        <javac srcdir="${src.home}/main/java"
                destdir="${build.home}/WEB-INF/classes"
                debug="${compile.debug}"
                deprecation="${compile.deprecation}"
@@ -67,7 +67,7 @@
 
         <!-- Copy app resources -->
         <copy todir="${build.home}/WEB-INF/classes">
-            <fileset dir="${src.home}" excludes="**/*.java"/>
+            <fileset dir="${src.home}/main/java" excludes="**/*.java"/>
         </copy>
     </target>
 
@@ -79,6 +79,11 @@
         <copy todir="${dist.home}" file="${basedir}/deploy"/>
         <copy todir="${dist.home}" file="${basedir}/LICENSE.txt"/>
         <copy todir="${dist.home}" file="${basedir}/README.md"/>
+
+        <!-- Set shell script permissions to allow reading and execution for all UNIX users -->
+        <chmod file="${dist.home}/deploy" perm="ugo+rx"/>
+        <chmod file="${dist.home}/start" perm="ugo+rx"/>
+        <chmod file="${dist.home}/stop" perm="ugo+rx"/>
     </target>
 
     <target name="clean">
